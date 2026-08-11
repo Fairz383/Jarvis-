@@ -299,7 +299,7 @@
     <div class="field">
       <label>Deepgram API Key</label>
       <input type="password" id="deepgramKey" placeholder="Paste key here" autocapitalize="off" autocorrect="off">
-      <small>Free key at console.deepgram.com</small>
+      <small>Free key at console.deepgram.com — also powers Jarvis's voice</small>
     </div>
     <div class="field">
       <label>Groq API Key</label>
@@ -307,7 +307,7 @@
       <small>Free key at console.groq.com</small>
     </div>
     <div class="field">
-      <label>ElevenLabs API Key (optional)</label>
+      <label>ElevenLabs API Key (optional, paid tier only)</label>
       <input type="password" id="elevenlabsKey" placeholder="Leave blank to use built-in voice" autocapitalize="off" autocorrect="off">
       <small>For a more natural voice. Free tier at elevenlabs.io</small>
     </div>
@@ -905,10 +905,70 @@
     });
   }
 
+  async function speakWithDeepgramAura(text) {
+    const model = "aura-2-thalia-en"; // natural-sounding default voice
+    const url = "https://api.deepgram.com/v1/speak?model=" + model;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Token " + keys.deepgram,
+      },
+      body: JSON.stringify({ text: text }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error("Deepgram TTS " + response.status + ": " + errText.slice(0, 200));
+    }
+
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+
+    return new Promise((resolve, reject) => {
+      let done = false;
+      const finish = (fn) => {
+        if (done) return;
+        done = true;
+        clearTimeout(safetyTimer);
+        URL.revokeObjectURL(audioUrl);
+        fn();
+      };
+
+      audio.onended = () => finish(resolve);
+      audio.onerror = () => finish(() => reject(new Error("Audio playback failed")));
+
+      const safetyTimer = setTimeout(
+        () => finish(resolve),
+        Math.max(6000, text.length * 100)
+      );
+
+      audio.play().catch((err) => finish(() => reject(err)));
+    });
+  }
+
   async function speak(text) {
     talkBtn.classList.remove("thinking");
     state = "speaking";
     setStatus("speaking…", "speaking");
+
+    // Preference order: Deepgram Aura (free, reuses existing key) ->
+    // ElevenLabs (if the user has a paid key) -> built-in browser voice.
+    if (keys.deepgram) {
+      try {
+        await speakWithDeepgramAura(text);
+        resetToIdle();
+        return;
+      } catch (err) {
+        addBubble(
+          "system",
+          "Deepgram voice error: " + err.message + " — trying next option.",
+          "error"
+        );
+      }
+    }
 
     if (keys.elevenlabs) {
       try {
