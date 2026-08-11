@@ -574,6 +574,20 @@
       } else {
         addBubble("jarvis", reply);
         speak(reply);
+
+        // Debug aid: if the request sounded action-like but nothing was
+        // parsed, show the raw reply so we can see what the AI actually
+        // returned instead of guessing.
+        const actionish = /open|navigate|go to|search for|call |text |email|directions|website/i.test(
+          transcript
+        );
+        if (actionish) {
+          addBubble(
+            "system",
+            "Debug (no action detected) - raw reply: " + reply.slice(0, 300),
+            "error"
+          );
+        }
       }
     } catch (err) {
       addBubble("system", "Error: " + err.message, "error");
