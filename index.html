@@ -306,6 +306,11 @@
       <input type="password" id="groqKey" placeholder="Paste key here" autocapitalize="off" autocorrect="off">
       <small>Free key at console.groq.com</small>
     </div>
+    <div class="field">
+      <label>ElevenLabs API Key (optional)</label>
+      <input type="password" id="elevenlabsKey" placeholder="Leave blank to use built-in voice" autocapitalize="off" autocorrect="off">
+      <small>For a more natural voice. Free tier at elevenlabs.io</small>
+    </div>
     <button id="saveSettings">Save</button>
     <button id="clearHistoryBtn" style="background:none;border:1px solid var(--line);color:var(--text-dim);margin-top:6px;">Clear conversation memory</button>
     <button id="closeSettings">Close</button>
@@ -324,9 +329,9 @@
   function loadKeys() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : { deepgram: "", groq: "" };
+      return raw ? JSON.parse(raw) : { deepgram: "", groq: "", elevenlabs: "" };
     } catch (e) {
-      return { deepgram: "", groq: "" };
+      return { deepgram: "", groq: "", elevenlabs: "" };
     }
   }
 
@@ -368,9 +373,11 @@
   const saveSettingsBtn = document.getElementById("saveSettings");
   const deepgramKeyInput = document.getElementById("deepgramKey");
   const groqKeyInput = document.getElementById("groqKey");
+  const elevenlabsKeyInput = document.getElementById("elevenlabsKey");
 
   deepgramKeyInput.value = keys.deepgram || "";
   groqKeyInput.value = keys.groq || "";
+  elevenlabsKeyInput.value = keys.elevenlabs || "";
 
   // ---------- Settings modal ----------
   settingsBtn.addEventListener("click", () => {
@@ -385,6 +392,7 @@
     keys = {
       deepgram: deepgramKeyInput.value.trim(),
       groq: groqKeyInput.value.trim(),
+      elevenlabs: elevenlabsKeyInput.value.trim(),
     };
     saveKeys(keys);
     settingsModal.classList.remove("open");
@@ -615,25 +623,77 @@
   }
 
   // ---------- Text-to-speech ----------
-  function speak(text) {
+  const ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // "Rachel" - a default ElevenLabs preset voice
+
+  function speakWithBrowser(text) {
     if (!("speechSynthesis" in window)) {
       resetToIdle();
       return;
     }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.onend = resetToIdle;
+    utterance.onerror = resetToIdle;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }
 
+  async function speakWithElevenLabs(text) {
+    const url = "https://api.elevenlabs.io/v1/text-to-speech/" + ELEVENLABS_VOICE_ID;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "audio/mpeg",
+        "xi-api-key": keys.elevenlabs,
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: "eleven_multilingual_v2",
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error("ElevenLabs " + response.status + ": " + errText.slice(0, 200));
+    }
+
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+
+    return new Promise((resolve, reject) => {
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        resolve();
+      };
+      audio.onerror = (e) => {
+        URL.revokeObjectURL(audioUrl);
+        reject(new Error("Audio playback failed"));
+      };
+      audio.play().catch(reject);
+    });
+  }
+
+  async function speak(text) {
     talkBtn.classList.remove("thinking");
     state = "speaking";
     setStatus("speaking…", "speaking");
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+    if (keys.elevenlabs) {
+      try {
+        await speakWithElevenLabs(text);
+        resetToIdle();
+        return;
+      } catch (err) {
+        // Fall through to browser voice if ElevenLabs fails for any reason
+        addBubble("system", "ElevenLabs unavailable, using built-in voice instead.", "error");
+      }
+    }
 
-    utterance.onend = resetToIdle;
-    utterance.onerror = resetToIdle;
-
-    window.speechSynthesis.cancel(); // clear any queued speech
-    window.speechSynthesis.speak(utterance);
+    speakWithBrowser(text);
   }
 
   // ---------- Button wiring (tap to start, tap again to stop) ----------
