@@ -917,7 +917,11 @@
         return;
       } catch (err) {
         // Fall through to browser voice if ElevenLabs fails for any reason
-        addBubble("system", "ElevenLabs unavailable, using built-in voice instead.", "error");
+        addBubble(
+          "system",
+          "ElevenLabs error: " + err.message + " — using built-in voice instead.",
+          "error"
+        );
       }
     }
 
