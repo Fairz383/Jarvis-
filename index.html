@@ -311,6 +311,11 @@
       <input type="password" id="elevenlabsKey" placeholder="Leave blank to use built-in voice" autocapitalize="off" autocorrect="off">
       <small>For a more natural voice. Free tier at elevenlabs.io</small>
     </div>
+    <div class="field">
+      <label>ElevenLabs Voice ID (optional)</label>
+      <input type="text" id="elevenlabsVoiceId" placeholder="21m00Tcm4TlvDq8ikWAM" autocapitalize="off" autocorrect="off">
+      <small>Find one at elevenlabs.io/app/voice-library. Leave blank for default (Rachel).</small>
+    </div>
     <button id="saveSettings">Save</button>
     <button id="clearHistoryBtn" style="background:none;border:1px solid var(--line);color:var(--text-dim);margin-top:6px;">Clear conversation memory</button>
     <button id="closeSettings">Close</button>
@@ -329,9 +334,9 @@
   function loadKeys() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : { deepgram: "", groq: "", elevenlabs: "" };
+      return raw ? JSON.parse(raw) : { deepgram: "", groq: "", elevenlabs: "", voiceId: "" };
     } catch (e) {
-      return { deepgram: "", groq: "", elevenlabs: "" };
+      return { deepgram: "", groq: "", elevenlabs: "", voiceId: "" };
     }
   }
 
@@ -374,10 +379,12 @@
   const deepgramKeyInput = document.getElementById("deepgramKey");
   const groqKeyInput = document.getElementById("groqKey");
   const elevenlabsKeyInput = document.getElementById("elevenlabsKey");
+  const elevenlabsVoiceIdInput = document.getElementById("elevenlabsVoiceId");
 
   deepgramKeyInput.value = keys.deepgram || "";
   groqKeyInput.value = keys.groq || "";
   elevenlabsKeyInput.value = keys.elevenlabs || "";
+  elevenlabsVoiceIdInput.value = keys.voiceId || "";
 
   // ---------- Settings modal ----------
   settingsBtn.addEventListener("click", () => {
@@ -393,6 +400,7 @@
       deepgram: deepgramKeyInput.value.trim(),
       groq: groqKeyInput.value.trim(),
       elevenlabs: elevenlabsKeyInput.value.trim(),
+      voiceId: elevenlabsVoiceIdInput.value.trim(),
     };
     saveKeys(keys);
     settingsModal.classList.remove("open");
@@ -623,7 +631,7 @@
   }
 
   // ---------- Text-to-speech ----------
-  const ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // "Rachel" - a default ElevenLabs preset voice
+  const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // "Rachel" - a default ElevenLabs preset voice
 
   function speakWithBrowser(text) {
     if (!("speechSynthesis" in window)) {
@@ -633,14 +641,41 @@
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
-    utterance.onend = resetToIdle;
-    utterance.onerror = resetToIdle;
+
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(safetyTimer);
+      resetToIdle();
+    };
+
+    utterance.onend = finish;
+    utterance.onerror = finish;
+
+    // Safety net: iOS Safari sometimes silently fails to fire onend/onerror
+    // when speech is triggered from async code. Never let the UI get stuck.
+    const estimatedMs = Math.max(4000, text.length * 90);
+    const safetyTimer = setTimeout(finish, estimatedMs);
+
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   }
 
+  function unlockSpeechSynthesis() {
+    // iOS Safari requires speech synthesis to be "unlocked" by a direct,
+    // synchronous user gesture at least once before it will reliably work
+    // when triggered later from async code (after network calls).
+    if (!("speechSynthesis" in window) || window.__jarvisSpeechUnlocked) return;
+    window.__jarvisSpeechUnlocked = true;
+    const primer = new SpeechSynthesisUtterance(" ");
+    primer.volume = 0;
+    window.speechSynthesis.speak(primer);
+  }
+
   async function speakWithElevenLabs(text) {
-    const url = "https://api.elevenlabs.io/v1/text-to-speech/" + ELEVENLABS_VOICE_ID;
+    const voiceId = keys.voiceId || DEFAULT_VOICE_ID;
+    const url = "https://api.elevenlabs.io/v1/text-to-speech/" + voiceId;
 
     const response = await fetch(url, {
       method: "POST",
@@ -665,15 +700,25 @@
     const audio = new Audio(audioUrl);
 
     return new Promise((resolve, reject) => {
-      audio.onended = () => {
+      let done = false;
+      const finish = (fn) => {
+        if (done) return;
+        done = true;
+        clearTimeout(safetyTimer);
         URL.revokeObjectURL(audioUrl);
-        resolve();
+        fn();
       };
-      audio.onerror = (e) => {
-        URL.revokeObjectURL(audioUrl);
-        reject(new Error("Audio playback failed"));
-      };
-      audio.play().catch(reject);
+
+      audio.onended = () => finish(resolve);
+      audio.onerror = () => finish(() => reject(new Error("Audio playback failed")));
+
+      // Safety net in case the audio element never fires ended/error
+      const safetyTimer = setTimeout(
+        () => finish(resolve),
+        Math.max(6000, text.length * 100)
+      );
+
+      audio.play().catch((err) => finish(() => reject(err)));
     });
   }
 
@@ -698,6 +743,7 @@
 
   // ---------- Button wiring (tap to start, tap again to stop) ----------
   talkBtn.addEventListener("click", () => {
+    unlockSpeechSynthesis();
     if (state === "idle") {
       startRecording();
     } else if (state === "recording") {
