@@ -318,6 +318,7 @@
     </div>
     <button id="saveSettings">Save</button>
     <button id="clearHistoryBtn" style="background:none;border:1px solid var(--line);color:var(--text-dim);margin-top:6px;">Clear conversation memory</button>
+    <button id="clearMemoriesBtn" style="background:none;border:1px solid var(--line);color:var(--text-dim);margin-top:6px;">Clear everything Jarvis knows about you</button>
     <button id="closeSettings">Close</button>
   </div>
 </div>
@@ -364,6 +365,40 @@
 
   function clearHistory() {
     localStorage.removeItem(HISTORY_KEY);
+  }
+
+  const MEMORY_KEY = "jarvis_memories_v1";
+  const MAX_MEMORIES = 60; // durable facts, capped so the prompt doesn't grow unbounded
+
+  function loadMemories() {
+    try {
+      const raw = localStorage.getItem(MEMORY_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveMemories(memArr) {
+    try {
+      const trimmed = memArr.slice(-MAX_MEMORIES);
+      localStorage.setItem(MEMORY_KEY, JSON.stringify(trimmed));
+    } catch (e) {
+      // Storage full or unavailable - this fact just won't persist
+    }
+  }
+
+  function addMemory(fact) {
+    const mem = loadMemories();
+    // Avoid exact duplicate facts piling up
+    if (!mem.includes(fact)) {
+      mem.push(fact);
+      saveMemories(mem);
+    }
+  }
+
+  function clearMemories() {
+    localStorage.removeItem(MEMORY_KEY);
   }
 
   let keys = loadKeys();
@@ -416,10 +451,17 @@
     addBubble("system", "Conversation memory cleared.", "error");
   });
 
+  const clearMemoriesBtn = document.getElementById("clearMemoriesBtn");
+  clearMemoriesBtn.addEventListener("click", () => {
+    clearMemories();
+    settingsModal.classList.remove("open");
+    addBubble("system", "Everything Jarvis knew about you has been cleared.", "error");
+  });
+
   // ---------- Conversation state ----------
   const history = loadHistory(); // { role: "user"|"assistant", content: "..." }
 
-  const SYSTEM_INSTRUCTION =
+  const BASE_SYSTEM_INSTRUCTION =
     "You are Jarvis, a crisp and professional personal assistant. " +
     "Keep replies concise, direct, and useful, ideally 1-3 sentences " +
     "since they will be spoken aloud. No filler, no excessive " +
@@ -438,11 +480,31 @@
     '{"action":"email","to":"...","subject":"...","body":"..."} to ' +
     "compose an email (fields optional), " +
     '{"action":"directions","destination":"..."} for maps directions, ' +
-    '{"action":"map","query":"..."} to show a place on the map. ' +
+    '{"action":"map","query":"..."} to show a place on the map, ' +
+    '{"action":"remember","fact":"..."} to permanently remember a ' +
+    "durable fact the user shares about themselves - their name, " +
+    "preferences, routines, people in their life, ongoing projects, " +
+    "or anything worth recalling in future conversations. Only use " +
+    "this for facts that will still matter later, not one-off " +
+    "requests or small talk. You can include a remember action " +
+    "alongside a normal reply in the same response. " +
     'Example: user says "open youtube" -> you reply exactly: ' +
     '{"action":"open_url","url":"https://youtube.com"} Opening YouTube. ' +
+    'Example: user says "my dog is named Max" -> you reply exactly: ' +
+    '{"action":"remember","fact":"User\'s dog is named Max."} Got it. ' +
     "For anything else, just reply normally with plain spoken text, " +
     "no JSON.";
+
+  function buildSystemInstruction() {
+    const memories = loadMemories();
+    if (memories.length === 0) return BASE_SYSTEM_INSTRUCTION;
+    return (
+      BASE_SYSTEM_INSTRUCTION +
+      " Here is what you already know about this user from past " +
+      "conversations, use it naturally when relevant: " +
+      memories.join(" | ")
+    );
+  }
 
   function addBubble(who, text, kind) {
     const div = document.createElement("div");
@@ -565,12 +627,19 @@
 
       const reply = await askGroq(transcript);
 
-      const parsedAction = tryParseAction(reply);
-      if (parsedAction) {
-        runAction(parsedAction.action);
-        const spoken = parsedAction.spokenText || "Done.";
+      const parsedActions = tryParseActions(reply);
+      if (parsedActions) {
+        parsedActions.actions.forEach((a) => runAction(a));
+        const spoken = parsedActions.spokenText || "Done.";
         addBubble("jarvis", spoken);
         speak(spoken);
+
+        const rememberedSomething = parsedActions.actions.some(
+          (a) => a.action === "remember"
+        );
+        if (rememberedSomething) {
+          addBubble("system", "Noted for future conversations.", "error");
+        }
       } else {
         addBubble("jarvis", reply);
         speak(reply);
@@ -632,7 +701,7 @@
   async function askGroq(userText) {
     const url = "https://api.groq.com/openai/v1/chat/completions";
 
-    const messages = [{ role: "system", content: SYSTEM_INSTRUCTION }]
+    const messages = [{ role: "system", content: buildSystemInstruction() }]
       .concat(history)
       .concat([{ role: "user", content: userText }]);
 
@@ -671,29 +740,36 @@
   }
 
   // ---------- Device actions ----------
-  function tryParseAction(reply) {
+  function tryParseActions(reply) {
     // Strip markdown code fences if the model wrapped the JSON in them
-    const cleaned = reply.replace(/```json|```/gi, "");
+    let cleaned = reply.replace(/```json|```/gi, "");
 
-    // Find the first {...} block anywhere in the reply, not just line 1 -
-    // the model doesn't always put it exactly first.
-    const match = cleaned.match(/\{[^{}]*"action"[^{}]*\}/);
-    if (!match) return null;
+    const matches = cleaned.match(/\{[^{}]*"action"[^{}]*\}/g);
+    if (!matches) return null;
 
-    try {
-      const parsed = JSON.parse(match[0]);
-      if (parsed && parsed.action) {
-        const spokenText = cleaned.replace(match[0], "").trim();
-        return { action: parsed, spokenText: spokenText };
+    const actions = [];
+    matches.forEach((m) => {
+      try {
+        const parsed = JSON.parse(m);
+        if (parsed && parsed.action) {
+          actions.push(parsed);
+          cleaned = cleaned.replace(m, "");
+        }
+      } catch (e) {
+        // Malformed JSON - skip this block
       }
-    } catch (e) {
-      // Malformed JSON - treat as normal text
-    }
-    return null;
+    });
+
+    if (actions.length === 0) return null;
+    return { actions: actions, spokenText: cleaned.trim() };
   }
 
   function runAction(action) {
     switch (action.action) {
+      case "remember": {
+        if (action.fact) addMemory(String(action.fact));
+        break;
+      }
       case "open_url": {
         let url = action.url || "";
         if (!/^https?:\/\//i.test(url)) url = "https://" + url;
