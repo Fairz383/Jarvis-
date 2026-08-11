@@ -426,9 +426,10 @@
     "enthusiasm. Address the request efficiently, the way a sharp " +
     "executive assistant would. " +
     "You can perform a few real device actions. If the user's request " +
-    "clearly matches one of these, respond with ONLY a JSON object on " +
-    "the first line in this exact format, then optionally a short " +
-    "spoken confirmation on the next line: " +
+    "clearly matches one of these, you MUST include the exact JSON " +
+    "object below somewhere in your reply - never just describe the " +
+    "action in words without it, since only the JSON actually triggers " +
+    "it: " +
     '{"action":"open_url","url":"https://..."} for opening any website, ' +
     '{"action":"search","query":"..."} for a general web search, ' +
     '{"action":"call","number":"..."} to call a phone number, ' +
@@ -438,6 +439,8 @@
     "compose an email (fields optional), " +
     '{"action":"directions","destination":"..."} for maps directions, ' +
     '{"action":"map","query":"..."} to show a place on the map. ' +
+    'Example: user says "open youtube" -> you reply exactly: ' +
+    '{"action":"open_url","url":"https://youtube.com"} Opening YouTube. ' +
     "For anything else, just reply normally with plain spoken text, " +
     "no JSON.";
 
@@ -655,16 +658,22 @@
 
   // ---------- Device actions ----------
   function tryParseAction(reply) {
-    const firstLine = reply.split("\n")[0].trim();
-    if (!firstLine.startsWith("{")) return null;
+    // Strip markdown code fences if the model wrapped the JSON in them
+    const cleaned = reply.replace(/```json|```/gi, "");
+
+    // Find the first {...} block anywhere in the reply, not just line 1 -
+    // the model doesn't always put it exactly first.
+    const match = cleaned.match(/\{[^{}]*"action"[^{}]*\}/);
+    if (!match) return null;
+
     try {
-      const parsed = JSON.parse(firstLine);
+      const parsed = JSON.parse(match[0]);
       if (parsed && parsed.action) {
-        const rest = reply.slice(firstLine.length).trim();
-        return { action: parsed, spokenText: rest };
+        const spokenText = cleaned.replace(match[0], "").trim();
+        return { action: parsed, spokenText: spokenText };
       }
     } catch (e) {
-      // Not valid JSON - treat as normal text
+      // Malformed JSON - treat as normal text
     }
     return null;
   }
