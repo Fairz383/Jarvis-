@@ -91,6 +91,51 @@
 
   header .brand span { color: var(--cyan); }
 
+  /* Corner HUD panels, evoking the boxed instrument-cluster reference look */
+  .hudPanel {
+    position: absolute;
+    border: 1px solid var(--cyan-dim);
+    color: var(--cyan-dim);
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    padding: 4px 6px;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .hudPanel.corner-tl { top: 14px; left: 14px; }
+  .hudPanel.corner-tr { top: 14px; right: 14px; text-align: right; }
+  .hudPanel.corner-bl { bottom: 14px; left: 14px; }
+  .hudPanel.corner-br { bottom: 14px; right: 14px; text-align: right; }
+
+  .hudPanel .bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
+    margin-top: 3px;
+  }
+  .hudPanel .bars i {
+    display: block;
+    width: 3px;
+    background: var(--cyan-dim);
+    opacity: 0.7;
+  }
+
+  .frameCorner {
+    position: fixed;
+    width: 16px;
+    height: 16px;
+    border-color: var(--cyan-dim);
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: 52;
+  }
+  .frameCorner.tl { top: 8px; left: 8px; border-top: 1px solid; border-left: 1px solid; }
+  .frameCorner.tr { top: 8px; right: 8px; border-top: 1px solid; border-right: 1px solid; }
+  .frameCorner.bl { bottom: 8px; left: 8px; border-bottom: 1px solid; border-left: 1px solid; }
+  .frameCorner.br { bottom: 8px; right: 8px; border-bottom: 1px solid; border-right: 1px solid; }
+
   #settingsBtn {
     background: none;
     border: 1px solid var(--line);
@@ -177,8 +222,8 @@
 
   #talkBtnWrap {
     position: relative;
-    width: 180px;
-    height: 180px;
+    width: 210px;
+    height: 210px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -188,42 +233,64 @@
     position: absolute;
     border-radius: 50%;
     border: 1px solid var(--cyan-dim);
-    opacity: 0.5;
   }
 
-  .hudRing.r1 { inset: 0; }
+  .hudRing.r1 { inset: 0; opacity: 0.9; }
   .hudRing.r2 {
-    inset: 14px;
+    inset: 16px;
     border-style: dashed;
-    opacity: 0.35;
-    animation: spin-slow 18s linear infinite;
+    opacity: 0.55;
+    animation: spin-slow 30s linear infinite;
   }
   .hudRing.r3 {
-    inset: 28px;
-    opacity: 0.3;
-    animation: spin-slow-rev 24s linear infinite;
+    inset: 34px;
+    opacity: 0.8;
+  }
+  .hudRing.r4 {
+    inset: 46px;
+    border-style: dotted;
+    opacity: 0.4;
+    animation: spin-slow-rev 40s linear infinite;
   }
 
-  .hudTick {
+  /* Crosshair tick marks at N/E/S/W, like a radar dial */
+  .hudCrosshair {
     position: absolute;
     inset: 0;
-    border-radius: 50%;
   }
-  .hudTick::before, .hudTick::after {
-    content: "";
+  .hudCrosshair span {
     position: absolute;
-    background: var(--cyan-dim);
-    opacity: 0.7;
+    background: var(--cyan);
+    opacity: 0.8;
   }
-  .hudTick::before { top: -2px; left: 50%; width: 1px; height: 8px; transform: translateX(-50%); }
-  .hudTick::after { bottom: -2px; left: 50%; width: 1px; height: 8px; transform: translateX(-50%); }
+  .hudCrosshair .n { top: -1px; left: 50%; width: 1px; height: 10px; transform: translateX(-50%); }
+  .hudCrosshair .s { bottom: -1px; left: 50%; width: 1px; height: 10px; transform: translateX(-50%); }
+  .hudCrosshair .e { right: -1px; top: 50%; width: 10px; height: 1px; transform: translateY(-50%); }
+  .hudCrosshair .w { left: -1px; top: 50%; width: 10px; height: 1px; transform: translateY(-50%); }
+
+  /* Small tick marks around the outer ring, radar-style */
+  .hudTicks {
+    position: absolute;
+    inset: 0;
+    animation: spin-slow 90s linear infinite;
+  }
+  .hudTicks i {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 1px;
+    height: 6px;
+    background: var(--cyan-dim);
+    opacity: 0.6;
+    transform-origin: 50% 105px;
+  }
 
   #scanRing {
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent 0deg, rgba(79,216,212,0.55) 18deg, transparent 40deg);
-    animation: spin-fast 2.6s linear infinite;
+    background: conic-gradient(from 0deg, transparent 0deg, rgba(79,216,212,0.6) 16deg, transparent 38deg);
+    animation: spin-fast 2.2s linear infinite;
     opacity: 0;
     transition: opacity 0.3s;
   }
@@ -238,11 +305,12 @@
   @keyframes spin-fast { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
   #talkBtn {
-    width: 96px;
-    height: 96px;
+    width: 92px;
+    height: 92px;
     border-radius: 50%;
-    border: 2px solid var(--cyan-dim);
-    background: radial-gradient(circle at 50% 40%, rgba(79,216,212,0.12), transparent 70%);
+    border: 2px solid var(--cyan);
+    background: radial-gradient(circle at 50% 40%, rgba(79,216,212,0.18), transparent 70%);
+    box-shadow: 0 0 18px rgba(79,216,212,0.25), inset 0 0 14px rgba(79,216,212,0.15);
     position: relative;
     z-index: 2;
     display: flex;
@@ -386,10 +454,14 @@
     <div id="statusLine" class="mono">tap to talk</div>
     <div id="talkBtnWrap">
       <div id="scanRing"></div>
+      <div class="hudRing r4"></div>
       <div class="hudRing r3"></div>
       <div class="hudRing r2"></div>
       <div class="hudRing r1"></div>
-      <div class="hudTick"></div>
+      <div class="hudTicks" id="hudTicks"></div>
+      <div class="hudCrosshair">
+        <span class="n"></span><span class="s"></span><span class="e"></span><span class="w"></span>
+      </div>
       <button id="talkBtn">
         <svg id="talkIcon" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a1 1 0 0 0-2 0 3 3 0 0 1-6 0 1 1 0 0 0-2 0 5 5 0 0 0 4 4.9V18H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.1A5 5 0 0 0 17 11z"/></svg>
       </button>
@@ -400,6 +472,20 @@
 </div>
 <div id="scanlineOverlay"></div>
 <div id="scanSweep"></div>
+
+<div class="frameCorner tl"></div>
+<div class="frameCorner tr"></div>
+<div class="frameCorner bl"></div>
+<div class="frameCorner br"></div>
+
+<div class="hudPanel corner-bl mono">
+  SIG <span id="hudSig">--</span>
+  <div class="bars" id="hudBars"></div>
+</div>
+<div class="hudPanel corner-br mono">
+  MEM <span id="hudMemCount">0</span><br>
+  SYS OK
+</div>
 
 <div id="settingsModal">
   <div id="settingsPanel">
@@ -762,6 +848,7 @@
         );
         if (rememberedSomething) {
           addBubble("system", "Noted for future conversations.", "error");
+          if (typeof updateHudMemCount === "function") updateHudMemCount();
         }
       } else {
         addBubble("jarvis", reply);
@@ -888,6 +975,43 @@
     return { actions: actions, spokenText: cleaned.trim() };
   }
 
+  // Known apps that have their own URL scheme for opening the native app
+  // directly. We try the scheme first; if the app isn't installed, iOS
+  // just does nothing, so we fall back to the website after a short delay.
+  const APP_SCHEMES = [
+    { match: /tiktok\.com/i, scheme: "tiktok://" },
+    { match: /instagram\.com/i, scheme: "instagram://app" },
+    { match: /(twitter\.com|x\.com)/i, scheme: "twitter://" },
+    { match: /snapchat\.com/i, scheme: "snapchat://" },
+    { match: /open\.spotify\.com|spotify\.com/i, scheme: "spotify://" },
+    { match: /youtube\.com/i, scheme: "youtube://" },
+    { match: /facebook\.com/i, scheme: "fb://" },
+    { match: /wa\.me|whatsapp\.com/i, scheme: "whatsapp://" },
+    { match: /netflix\.com/i, scheme: "nflx://" },
+    { match: /reddit\.com/i, scheme: "reddit://" },
+    { match: /amazon\.com/i, scheme: "amazon://" },
+  ];
+
+  function openUrlPreferApp(httpsUrl) {
+    const match = APP_SCHEMES.find((entry) => entry.match.test(httpsUrl));
+    if (!match) {
+      window.location.href = httpsUrl;
+      return;
+    }
+
+    const start = Date.now();
+    window.location.href = match.scheme;
+
+    // If the app wasn't installed, nothing happens and we're still here -
+    // fall back to the website. If the app DID open, the page will be
+    // backgrounded/hidden and this fallback simply won't matter.
+    setTimeout(() => {
+      if (!document.hidden && Date.now() - start < 2000) {
+        window.location.href = httpsUrl;
+      }
+    }, 700);
+  }
+
   function runAction(action) {
     switch (action.action) {
       case "remember": {
@@ -897,7 +1021,7 @@
       case "open_url": {
         let url = action.url || "";
         if (!/^https?:\/\//i.test(url)) url = "https://" + url;
-        window.location.href = url;
+        openUrlPreferApp(url);
         break;
       }
       case "search": {
@@ -1171,6 +1295,9 @@
     });
 
     startDataTicker();
+    initHudTicks();
+    initHudBars();
+    updateHudMemCount();
   });
 
   // ---------- Ambient HUD data ticker ----------
@@ -1190,6 +1317,50 @@
     };
     render();
     setInterval(render, 3200);
+  }
+
+  // Generates evenly-spaced tick marks around the outer radar ring
+  function initHudTicks() {
+    const container = document.getElementById("hudTicks");
+    if (!container) return;
+    const count = 36;
+    for (let i = 0; i < count; i++) {
+      const tick = document.createElement("i");
+      const angle = (360 / count) * i;
+      tick.style.transform = "rotate(" + angle + "deg)";
+      container.appendChild(tick);
+    }
+  }
+
+  // A small decorative bar-chart readout, like the reference HUD's
+  // signal-strength style indicator - purely cosmetic, animates gently.
+  function initHudBars() {
+    const container = document.getElementById("hudBars");
+    const sigEl = document.getElementById("hudSig");
+    if (!container) return;
+    const barCount = 8;
+    const bars = [];
+    for (let i = 0; i < barCount; i++) {
+      const bar = document.createElement("i");
+      container.appendChild(bar);
+      bars.push(bar);
+    }
+    const tick = () => {
+      let total = 0;
+      bars.forEach((bar) => {
+        const h = 3 + Math.round(Math.random() * 11);
+        bar.style.height = h + "px";
+        total += h;
+      });
+      if (sigEl) sigEl.textContent = Math.round((total / (barCount * 14)) * 100);
+    };
+    tick();
+    setInterval(tick, 900);
+  }
+
+  function updateHudMemCount() {
+    const el = document.getElementById("hudMemCount");
+    if (el) el.textContent = String(loadMemories().length);
   }
 })();
 </script>
