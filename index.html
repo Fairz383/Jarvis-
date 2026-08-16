@@ -72,6 +72,8 @@
     flex-direction: column;
     height: 100%;
     height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
@@ -90,6 +92,218 @@
   }
 
   header .brand span { color: var(--cyan); }
+
+  #topBarInfo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.03em;
+  }
+  #topBarInfo .sep { opacity: 0.4; }
+  #topBarInfo #topWeather { color: var(--cyan-dim); }
+
+  .card {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .card .cardHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .card .cardHead .cardTitle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--cyan-dim);
+  }
+
+  .statRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .statRow .val { color: var(--cyan); font-family: "SF Mono", monospace; }
+
+  .miniBarTrack {
+    height: 4px;
+    background: var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .miniBarFill {
+    height: 100%;
+    background: var(--cyan-dim);
+  }
+
+  #weatherCard .tempRow {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  #weatherCard .tempBig {
+    font-size: 26px;
+    font-weight: 600;
+  }
+  #weatherCard .place {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  #cameraPreview {
+    width: 100%;
+    border-radius: 8px;
+    background: #000;
+    display: none;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+  }
+  #cameraPreview.on { display: block; }
+
+  #cameraToggleBtn {
+    width: 100%;
+    padding: 8px;
+    margin-top: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: none;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  #conversationHeaderRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 20px;
+  }
+  #conversationHeaderRow .label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  #conversationHeaderRow .actions {
+    display: flex;
+    gap: 8px;
+  }
+  #conversationHeaderRow button {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+
+  #textInputRow {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px 8px;
+  }
+  #textInput {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  #textSendBtn {
+    background: var(--cyan);
+    color: #06231f;
+    border: none;
+    border-radius: 8px;
+    padding: 0 16px;
+    font-weight: 600;
+  }
+
+  #jarvisWordmark {
+    display: none;
+    font-size: 22px;
+    letter-spacing: 0.25em;
+    color: var(--text);
+    text-align: center;
+  }
+
+  /* ---------- Desktop 3-column dashboard layout ---------- */
+  @media (min-width: 900px) {
+    #app {
+      overflow: hidden;
+    }
+
+    #mainGrid {
+      display: grid;
+      grid-template-columns: 300px 1fr 380px;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+      padding: 0 20px;
+    }
+
+    #leftCol {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding-right: 4px;
+    }
+
+    #centerCol {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #centerCol #controls {
+      padding: 0;
+    }
+
+    #jarvisWordmark {
+      display: block;
+      margin-top: 18px;
+    }
+
+    #rightCol {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border-left: 1px solid var(--line);
+      padding-left: 16px;
+    }
+
+    #rightCol #transcriptArea {
+      flex: 1;
+      max-height: none;
+      min-height: 0;
+    }
+
+    #textInputRow {
+      max-width: 760px;
+      margin: 10px auto 0;
+      width: 100%;
+    }
+
+    #hint {
+      text-align: center;
+    }
+  }
 
   /* Corner HUD panels, evoking the boxed instrument-cluster reference look */
   .hudPanel {
@@ -150,12 +364,20 @@
   }
 
   #transcriptArea {
-    flex: 1;
+    min-height: 160px;
+    max-height: 320px;
     overflow-y: auto;
     padding: 12px 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+  }
+
+  #dashCards {
+    padding: 4px 16px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .bubble {
@@ -395,47 +617,102 @@
 <div id="app">
   <header>
     <div class="brand mono">JAR<span>VIS</span></div>
+    <div id="topBarInfo" class="mono">
+      <span id="topClock">--:--</span>
+      <span class="sep">|</span>
+      <span id="topDate">-- -- ----</span>
+      <span class="sep">|</span>
+      <span id="topWeather">--°</span>
+    </div>
     <button id="settingsBtn">⚙</button>
   </header>
 
-  <div id="transcriptArea"></div>
+  <div id="mainGrid">
+    <div id="leftCol">
+      <div class="card" id="sessionStatsCard">
+        <div class="cardHead"><span class="cardTitle">System Stats</span></div>
+        <div class="statRow"><span>Commands this session</span><span class="val" id="statCommands">0</span></div>
+        <div class="statRow"><span>Memory entries</span><span class="val" id="statMemEntries">0</span></div>
+      </div>
 
-  <div id="controls">
-    <div id="statusLine" class="mono">tap to talk</div>
-    <div id="talkBtnWrap">
-      <svg id="jarvisOrb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="orbGlow" cx="50%" cy="45%" r="60%">
-            <stop offset="0%" stop-color="rgba(79,216,212,0.35)" />
-            <stop offset="70%" stop-color="rgba(79,216,212,0.08)" />
-            <stop offset="100%" stop-color="rgba(79,216,212,0)" />
-          </radialGradient>
-        </defs>
+      <div class="card" id="weatherCard">
+        <div class="cardHead"><span class="cardTitle">Weather</span><span id="weatherRefreshHint">--</span></div>
+        <div class="tempRow">
+          <span class="tempBig mono" id="weatherTempBig">--°</span>
+          <span class="place" id="weatherPlace">Location unavailable</span>
+        </div>
+        <div class="statRow" style="margin-top:8px;"><span id="weatherDesc">--</span></div>
+      </div>
 
-        <!-- Rotating band of scattered particles, like a swirling energy ring -->
-        <g id="particleRing"></g>
+      <div class="card" id="cameraCard">
+        <div class="cardHead"><span class="cardTitle">Camera</span></div>
+        <video id="cameraPreview" autoplay playsinline muted></video>
+        <button id="cameraToggleBtn">Turn camera on</button>
+      </div>
 
-        <!-- Soft glow behind the core -->
-        <circle cx="100" cy="100" r="50" fill="url(#orbGlow)" />
-
-        <!-- Smooth glowing core -->
-        <circle cx="100" cy="100" r="30" fill="rgba(10,13,18,0.7)" />
-        <circle cx="100" cy="100" r="30" fill="url(#orbGlow)" opacity="0.6" />
-        <circle id="orbRing" cx="100" cy="100" r="30" fill="none" stroke="var(--cyan)" stroke-width="1.2" opacity="0.85" />
-
-        <!-- Scan sweep arc, active only while listening/thinking/speaking -->
-        <circle id="orbSweep" cx="100" cy="100" r="30" fill="none"
-          stroke="var(--cyan)" stroke-width="2"
-          stroke-dasharray="18 170" stroke-linecap="round" opacity="0" />
-      </svg>
-
-      <button id="talkBtn">
-        <svg id="talkIcon" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a1 1 0 0 0-2 0 3 3 0 0 1-6 0 1 1 0 0 0-2 0 5 5 0 0 0 4 4.9V18H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.1A5 5 0 0 0 17 11z"/></svg>
-      </button>
+      <div class="card" id="uptimeCard">
+        <div class="cardHead"><span class="cardTitle">System Uptime</span></div>
+        <div class="statRow"><span>Running for</span><span class="val" id="statUptime">00:00:00</span></div>
+      </div>
     </div>
-    <div id="dataTicker" class="mono"></div>
-    <div id="hint">Deepgram + Groq, on-device keys only</div>
+
+    <div id="centerCol">
+      <div id="controls">
+        <div id="statusLine" class="mono">tap to talk</div>
+        <div id="talkBtnWrap">
+          <svg id="jarvisOrb" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="orbGlow" cx="50%" cy="45%" r="60%">
+                <stop offset="0%" stop-color="rgba(79,216,212,0.35)" />
+                <stop offset="70%" stop-color="rgba(79,216,212,0.08)" />
+                <stop offset="100%" stop-color="rgba(79,216,212,0)" />
+              </radialGradient>
+            </defs>
+
+            <!-- Rotating band of scattered particles, like a swirling energy ring -->
+            <g id="particleRing"></g>
+
+            <!-- Soft glow behind the core -->
+            <circle cx="100" cy="100" r="50" fill="url(#orbGlow)" />
+
+            <!-- Smooth glowing core -->
+            <circle cx="100" cy="100" r="30" fill="rgba(10,13,18,0.7)" />
+            <circle cx="100" cy="100" r="30" fill="url(#orbGlow)" opacity="0.6" />
+            <circle id="orbRing" cx="100" cy="100" r="30" fill="none" stroke="var(--cyan)" stroke-width="1.2" opacity="0.85" />
+
+            <!-- Scan sweep arc, active only while listening/thinking/speaking -->
+            <circle id="orbSweep" cx="100" cy="100" r="30" fill="none"
+              stroke="var(--cyan)" stroke-width="2"
+              stroke-dasharray="18 170" stroke-linecap="round" opacity="0" />
+          </svg>
+
+          <button id="talkBtn">
+            <svg id="talkIcon" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a1 1 0 0 0-2 0 3 3 0 0 1-6 0 1 1 0 0 0-2 0 5 5 0 0 0 4 4.9V18H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.1A5 5 0 0 0 17 11z"/></svg>
+          </button>
+        </div>
+        <div id="jarvisWordmark" class="mono">J.A.R.V.I.S</div>
+        <div id="dataTicker" class="mono"></div>
+      </div>
+    </div>
+
+    <div id="rightCol">
+      <div id="conversationHeaderRow">
+        <span class="label mono">Conversation</span>
+        <div class="actions">
+          <button id="extractConvoBtn">Extract</button>
+          <button id="clearConvoBtn">Clear</button>
+        </div>
+      </div>
+      <div id="transcriptArea"></div>
+    </div>
   </div>
+
+  <div id="textInputRow">
+    <input type="text" id="textInput" placeholder="Type a message…" autocapitalize="sentences">
+    <button id="textSendBtn">Send</button>
+  </div>
+
+  <div id="hint">Deepgram + Groq, on-device keys only</div>
 </div>
 <div id="scanlineOverlay"></div>
 <div id="scanSweep"></div>
@@ -578,6 +855,12 @@
   const groqKeyInput = document.getElementById("groqKey");
   const elevenlabsKeyInput = document.getElementById("elevenlabsKey");
   const elevenlabsVoiceIdInput = document.getElementById("elevenlabsVoiceId");
+  const textInput = document.getElementById("textInput");
+  const textSendBtn = document.getElementById("textSendBtn");
+  const extractConvoBtn = document.getElementById("extractConvoBtn");
+  const clearConvoBtn = document.getElementById("clearConvoBtn");
+  const cameraToggleBtn = document.getElementById("cameraToggleBtn");
+  const cameraPreview = document.getElementById("cameraPreview");
 
   deepgramKeyInput.value = keys.deepgram || "";
   groqKeyInput.value = keys.groq || "";
@@ -708,6 +991,8 @@
   let audioChunks = [];
   let recordingStream = null;
   let state = "idle"; // idle | recording | thinking | speaking
+  let commandCount = 0;
+  const sessionStart = Date.now();
 
   async function startRecording() {
     if (!keys.deepgram || !keys.groq) {
@@ -799,9 +1084,22 @@
       }
 
       addBubble("you", transcript);
-      setStatus("ANALYZING…", "thinking");
+      await processUserMessage(transcript);
+    } catch (err) {
+      addBubble("system", "Error: " + err.message, "error");
+      resetToIdle();
+    }
+  }
 
-      const reply = await askGroq(transcript);
+  // Shared pipeline: given text (from voice transcription OR typed input),
+  // ask Groq, run any actions, speak the reply. Used by both input paths.
+  async function processUserMessage(userText) {
+    try {
+      setStatus("ANALYZING…", "thinking");
+      commandCount++;
+      updateSessionStatsDisplay();
+
+      const reply = await askGroq(userText);
 
       const parsedActions = tryParseActions(reply);
       if (parsedActions) {
@@ -816,16 +1114,14 @@
         if (rememberedSomething) {
           addBubble("system", "Noted for future conversations.", "error");
           if (typeof updateHudMemCount === "function") updateHudMemCount();
+          updateSessionStatsDisplay();
         }
       } else {
         addBubble("jarvis", reply);
         speak(reply);
 
-        // Debug aid: if the request sounded action-like but nothing was
-        // parsed, show the raw reply so we can see what the AI actually
-        // returned instead of guessing.
         const actionish = /open|navigate|go to|search for|call |text |email|directions|website/i.test(
-          transcript
+          userText
         );
         if (actionish) {
           addBubble(
@@ -1344,6 +1640,200 @@
     const el = document.getElementById("hudMemCount");
     if (el) el.textContent = String(loadMemories().length);
   }
+
+  // ---------- Text input (typed alternative to voice) ----------
+  async function sendTypedMessage() {
+    const text = textInput.value.trim();
+    if (!text) return;
+    textInput.value = "";
+    addBubble("you", text);
+    await processUserMessage(text);
+  }
+
+  textSendBtn.addEventListener("click", sendTypedMessage);
+  textInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendTypedMessage();
+    }
+  });
+
+  // ---------- Session stats display ----------
+  function updateSessionStatsDisplay() {
+    const commandsEl = document.getElementById("statCommands");
+    const memEl = document.getElementById("statMemEntries");
+    if (commandsEl) commandsEl.textContent = String(commandCount);
+    if (memEl) memEl.textContent = String(loadMemories().length);
+  }
+
+  function startUptimeClock() {
+    const uptimeEl = document.getElementById("statUptime");
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+      const h = String(Math.floor(elapsed / 3600)).padStart(2, "0");
+      const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
+      const s = String(elapsed % 60).padStart(2, "0");
+      if (uptimeEl) uptimeEl.textContent = h + ":" + m + ":" + s;
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  // ---------- Top bar clock + date ----------
+  function startTopClock() {
+    const clockEl = document.getElementById("topClock");
+    const dateEl = document.getElementById("topDate");
+    const tick = () => {
+      const now = new Date();
+      if (clockEl) {
+        clockEl.textContent = now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+      if (dateEl) {
+        dateEl.textContent = now.toLocaleDateString([], {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+    };
+    tick();
+    setInterval(tick, 1000 * 15);
+  }
+
+  // ---------- Weather (Open-Meteo - free, no API key required) ----------
+  const WEATHER_CODES = {
+    0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+    45: "Fog", 48: "Depositing rime fog",
+    51: "Light drizzle", 53: "Drizzle", 55: "Dense drizzle",
+    61: "Light rain", 63: "Rain", 65: "Heavy rain",
+    71: "Light snow", 73: "Snow", 75: "Heavy snow",
+    80: "Rain showers", 81: "Rain showers", 82: "Violent rain showers",
+    95: "Thunderstorm", 96: "Thunderstorm w/ hail", 99: "Thunderstorm w/ hail",
+  };
+
+  async function fetchWeather() {
+    const topWeatherEl = document.getElementById("topWeather");
+    const tempBigEl = document.getElementById("weatherTempBig");
+    const placeEl = document.getElementById("weatherPlace");
+    const descEl = document.getElementById("weatherDesc");
+    const hintEl = document.getElementById("weatherRefreshHint");
+
+    if (!("geolocation" in navigator)) {
+      if (descEl) descEl.textContent = "Geolocation unavailable in this browser.";
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const url =
+            "https://api.open-meteo.com/v1/forecast?latitude=" +
+            latitude +
+            "&longitude=" +
+            longitude +
+            "&current=temperature_2m,weather_code&timezone=auto";
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("Weather fetch failed: " + res.status);
+          const data = await res.json();
+          const temp = Math.round(data.current.temperature_2m);
+          const code = data.current.weather_code;
+          const desc = WEATHER_CODES[code] || "Conditions unknown";
+
+          if (topWeatherEl) topWeatherEl.textContent = temp + "°";
+          if (tempBigEl) tempBigEl.textContent = temp + "°";
+          if (placeEl) placeEl.textContent = latitude.toFixed(1) + ", " + longitude.toFixed(1);
+
+          // Best-effort: resolve a real city name instead of raw coordinates
+          try {
+            const geoRes = await fetch(
+              "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" +
+                latitude +
+                "&longitude=" +
+                longitude +
+                "&localityLanguage=en"
+            );
+            if (geoRes.ok) {
+              const geo = await geoRes.json();
+              const city = geo.city || geo.locality || "";
+              const country = geo.countryCode || "";
+              if (city && placeEl) {
+                placeEl.textContent = city + (country ? ", " + country : "");
+              }
+            }
+          } catch (geoErr) {
+            // City lookup is best-effort only - coordinates already shown above
+          }
+          if (descEl) descEl.textContent = desc;
+          if (hintEl) hintEl.textContent = "live";
+        } catch (err) {
+          if (descEl) descEl.textContent = "Weather unavailable: " + err.message;
+        }
+      },
+      (err) => {
+        if (descEl) descEl.textContent = "Location permission denied.";
+        if (placeEl) placeEl.textContent = "Location unavailable";
+      },
+      { timeout: 8000 }
+    );
+  }
+
+  // ---------- Camera preview toggle ----------
+  let cameraStream = null;
+
+  cameraToggleBtn.addEventListener("click", async () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop());
+      cameraStream = null;
+      cameraPreview.srcObject = null;
+      cameraPreview.classList.remove("on");
+      cameraToggleBtn.textContent = "Turn camera on";
+      return;
+    }
+
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+      });
+      cameraPreview.srcObject = cameraStream;
+      cameraPreview.classList.add("on");
+      cameraToggleBtn.textContent = "Turn camera off";
+    } catch (err) {
+      addBubble("system", "Camera unavailable: " + err.message, "error");
+    }
+  });
+
+  // ---------- Extract / clear conversation (main panel buttons) ----------
+  extractConvoBtn.addEventListener("click", () => {
+    const lines = history.map(
+      (msg) => (msg.role === "user" ? "You: " : "Jarvis: ") + msg.content
+    );
+    const blob = new Blob([lines.join("\n\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "jarvis-conversation.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  clearConvoBtn.addEventListener("click", () => {
+    clearHistory();
+    history.length = 0;
+    transcriptArea.innerHTML = "";
+    addBubble("system", "Conversation memory cleared.", "error");
+  });
+
+  // ---------- Init new dashboard features ----------
+  startUptimeClock();
+  startTopClock();
+  fetchWeather();
+  updateSessionStatsDisplay();
 })();
 </script>
 </body>
